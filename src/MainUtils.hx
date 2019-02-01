@@ -1,12 +1,13 @@
-package com.pico8test;
+package;
 
 import Pico.*;
 /**
  * ...
  * @author Pierre Chamberlain
  */
+@:native("G")
 @:publicFields
-class GameUtils 
+class MainUtils 
 {
 	static var mouseX:Fixed = 0;
 	static var mouseY:Fixed = 0;
@@ -20,8 +21,6 @@ class GameUtils
 		isFrameEven = (frame % 2) == 0;
 		
 		updateMouseStatus();
-		
-		
 	}
 	
 	private static function updateMouseStatus() {
@@ -59,5 +58,11 @@ class GameUtils
 	
 	static function mouseReleased(id:Int):Bool {
 		return mouseTimes[id] == -frame;
+	}
+	
+	static function dist(x1:Fixed, y1:Fixed, x2:Fixed, y2:Fixed):Fixed {
+		var xDiff = x2 - x1;
+		var yDiff = y2 - y1;
+		return xDiff * xDiff + yDiff * yDiff;
 	}
 }

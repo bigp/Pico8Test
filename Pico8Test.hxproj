@@ -2,7 +2,7 @@
 <project version="2">
   <!-- Output SWF options -->
   <output>
-    <movie outputType="Application" />
+    <movie outputType="CustomBuild" />
     <movie input="" />
     <movie path="Pico8Test.p8hx" />
     <movie fps="0" />
@@ -10,21 +10,21 @@
     <movie height="0" />
     <movie version="0" />
     <movie minorVersion="0" />
-    <movie platform="Custom" />
+    <movie platform="JavaScript" />
     <movie background="#FFFFFF" />
   </output>
   <!-- Other classes to be compiled into your SWF -->
   <classpaths>
-    <class path="." />
+    <class path=".\src" />
   </classpaths>
   <!-- Build options -->
   <build>
     <option directives="" />
     <option flashStrict="False" />
     <option noInlineOnDebug="False" />
-    <option mainClass="Pico8Test" />
+    <option mainClass="Main" />
     <option enabledebug="False" />
-    <option additional="-lua Pico8Test.p8hx&#xA;--macro p8gen.PgMain.use()&#xA;-dce full" />
+    <option additional="--macro p8gen.PgMain.use()&#xA;-dce full" />
   </build>
   <!-- haxelib libraries -->
   <haxelib>
@@ -39,13 +39,13 @@
     <hidden path="obj" />
   </hiddenPaths>
   <!-- Executed before build -->
-  <preBuildCommand />
+  <preBuildCommand>haxe build.hxml</preBuildCommand>
   <!-- Executed after build -->
-  <postBuildCommand alwaysRun="False">send_keys2app PICO-8 "^r" pico8.exe $(ProjectName).p8 5000</postBuildCommand>
+  <postBuildCommand alwaysRun="False" />
   <!-- Other project options -->
   <options>
     <option showHiddenPaths="False" />
-    <option testMovie="Custom" />
+    <option testMovie="OpenDocument" />
     <option testMovieCommand="" />
   </options>
   <!-- Plugin storage -->
