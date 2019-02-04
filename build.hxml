@@ -2,8 +2,10 @@
 -main Main
 -cp src
 -js Pico8Test.p8hx
---macro p8gen.PgMain.use()
+# -lua Pico8Test_lua.lua
 -dce full
+--macro p8gen.PgMain.use()
 -cmd p8tool stats Pico8Test.p8
 # -cmd p8tool luafmt Pico8Test.p8
+# -cmd send_keys2app PICO-8 "^r" pico8.exe Pico8Test_fmt.p8 5000
 -cmd send_keys2app PICO-8 "^r" pico8.exe Pico8Test.p8 5000

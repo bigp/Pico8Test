@@ -1,65 +1,81 @@
 pico-8 cartridge // http://www.pico-8.com
 version 8
 __lua__
-function M_createRandomPlayer()
-  local player=P_create(0)
-  player.x=rnd(127.0)
-  player.y=rnd(127.0)
-  return player
+function UTILS_update()
+  UTILS_frame+=1
+  UTILS_isFrameEven=UTILS_frame%2==0
+  UTILS_updateMouseStatus()
 end
-function G_update()
-  G_frame+=1
-  G_isFrameEven=G_frame%2==0
-  G_updateMouseStatus()
-end
-function G_updateMouseStatus()
+function UTILS_updateMouseStatus()
   poke(24365,1)
-  G_mouseX=stat(32)
-  G_mouseY=stat(33)
-  G_mouseButtonMask=stat(34)
-  G_updateMouseButtonIndex(G_mouseButtonMask,1,0)
-  G_updateMouseButtonIndex(G_mouseButtonMask,2,1)
-  G_updateMouseButtonIndex(G_mouseButtonMask,4,2)
+  UTILS_mouseX=stat(32)
+  UTILS_mouseY=stat(33)
+  UTILS_mouseButtonMask=stat(34)
+  UTILS_updateMouseButtonIndex(UTILS_mouseButtonMask,1,0)
+  UTILS_updateMouseButtonIndex(UTILS_mouseButtonMask,2,1)
+  UTILS_updateMouseButtonIndex(UTILS_mouseButtonMask,4,2)
 end
-function G_updateMouseButtonIndex(stat,maskId,i)
-  if (band(G_mouseButtonMask,maskId))==0 then
-    if G_mouseTimes[i]>=0 then
-      G_mouseTimes[i]=-G_frame
+function UTILS_updateMouseButtonIndex(stat,maskId,i)
+  if (band(UTILS_mouseButtonMask,maskId))==0 then
+    if UTILS_mouseTimes[i]>=0 then
+      UTILS_mouseTimes[i]=-UTILS_frame
     end
     return
   end
-  if G_mouseTimes[i]>0 then
+  if UTILS_mouseTimes[i]>0 then
     return
   end
-  G_mouseTimes[i]=G_frame
+  UTILS_mouseTimes[i]=UTILS_frame
 end
-function G_mouseDown(id)
-  return G_mouseTimes[id]>0
+function UTILS_mouseDown(id)
+  return UTILS_mouseTimes[id]>0
 end
-function G_mousePressed(id)
-  return G_mouseTimes[id]==G_frame
+function UTILS_mousePressed(id)
+  return UTILS_mouseTimes[id]==UTILS_frame
 end
-function G_dist(x1,y1,x2,y2)
+function UTILS_dist(x1,y1,x2,y2)
   local xDiff=x2-x1
   local yDiff=y2-y1
   return xDiff*xDiff+yDiff*yDiff
 end
-function P_makeArrow(this)
+function UTILS_screenChange(scr)
+  if UTILS__screen!=nil then
+    UTILS__screen:destroy()
+  end
+  UTILS__screen=scr
+  if UTILS__screen==nil then
+    return
+  end
+  UTILS__screen:init()
+end
+function UTILS_screenUpdate()
+  if UTILS__screen==nil then
+    return
+  end
+  UTILS__screen:update()
+end
+function UTILS_screenDraw()
+  if UTILS__screen==nil then
+    return
+  end
+  UTILS__screen:draw()
+end
+function Player_makeArrow(this)
   return {
     x=0,y=0,velX=0,velY=0,lifetime=0
   }
 end
-function P_update(this)
+function Player_update(this)
   if not this.isInit then
-    this._x=this.x*MOTION_SCALE
-    this._y=this.y*MOTION_SCALE
+    this.pos._x=this.pos.x*CST_MOTION_SCALE
+    this.pos._y=this.pos.y*CST_MOTION_SCALE
     this.isInit=true
   end
-  P_healOverTime(this)
-  P_updateMotion(this)
-  P_updateArrows(this)
+  Player_healOverTime(this)
+  Player_updateMotion(this)
+  Player_updateArrows(this)
 end
-function P_draw(this)
+function Player_draw(this)
   if not this.isAlive then
     return
   end
@@ -67,61 +83,61 @@ function P_draw(this)
     if this.aimCounter==0 then
       pal(8,9)
     end
-    P_drawSprite(this,this.spriteIndex+3+P_getWalkCounter(this))
+    Player_drawSprite(this,this.pos.spriteIndex+3+Player_getWalkCounter(this))
   else
-    P_drawSprite(this,this.spriteIndex+P_getWalkCounter(this))
+    Player_drawSprite(this,this.pos.spriteIndex+Player_getWalkCounter(this))
   end
   pal()
-  P_drawHealthBar(this)
-  P_drawArrows(this)
+  Player_drawHealthBar(this)
+  Player_drawArrows(this)
 end
-function P_healOverTime(this)
+function Player_healOverTime(this)
   if this.health>=this.healthTemp then
     return
   end
   this.health+=1
 end
-function P_updateMotion(this)
-  this._x+=this.dirX*this.speed
-  this._y+=this.dirY*this.speed
-  if this._x<0 then
-    this._x=0
-    this.dirX=0
+function Player_updateMotion(this)
+  this.pos._x+=this.pos.dirX*this.pos.speed
+  this.pos._y+=this.pos.dirY*this.pos.speed
+  if this.pos._x<0 then
+    this.pos._x=0
+    this.pos.dirX=0
   end
-  if this._x>MAX_X then
-    this._x=MAX_X
-    this.dirX=0
+  if this.pos._x>CST_MAX_X then
+    this.pos._x=CST_MAX_X
+    this.pos.dirX=0
   end
-  if this._y<0 then
-    this._y=0
-    this.dirY=0
+  if this.pos._y<0 then
+    this.pos._y=0
+    this.pos.dirY=0
   end
-  if this._y>MAX_Y then
-    this._y=MAX_Y
-    this.dirY=0
+  if this.pos._y>CST_MAX_Y then
+    this.pos._y=CST_MAX_Y
+    this.pos.dirY=0
   end
-  if this.dirX==0 and this.dirY==0 then
+  if this.pos.dirX==0 and this.pos.dirY==0 then
     this.walkCounter=0
   else
-    this.walkCounter+=this.speed
+    this.walkCounter+=this.pos.speed
   end
   if this.isAiming then
-    this.aimCharge=min(AIM_CHARGE_MAX,this.aimCharge+1)
+    this.aimCharge=min(CST_AIM_CHARGE_MAX,this.aimCharge+1)
     this.aimCounter+=1
-    this.aimCounter%=AIM_CHARGE_MAX-this.aimCharge+2
+    this.aimCounter%=CST_AIM_CHARGE_MAX-this.aimCharge+2
   else
     this.aimCharge=0
     this.aimCounter=0
   end
-  this.x=this._x/MOTION_SCALE
-  this.y=this._y/MOTION_SCALE
+  this.pos.x=this.pos._x/CST_MOTION_SCALE
+  this.pos.y=this.pos._y/CST_MOTION_SCALE
 end
-function P_updateMouse(this)
-  if not G_mouseDown(1) and this.isShooting then
+function Player_updateMouse(this)
+  if not UTILS_mouseDown(1) and this.isShooting then
     this.isShooting=false
   end
   if not this.isShooting then
-    this.isAiming=G_mouseDown(1)
+    this.isAiming=UTILS_mouseDown(1)
   end
   if this.wasAiming!=this.isAiming then
     if this.isAiming then
@@ -131,88 +147,89 @@ function P_updateMouse(this)
     end
   end
   this.wasAiming=this.isAiming
-  if G_mousePressed(0) then
-    P_shoot(this)
+  if UTILS_mousePressed(0) then
+    Player_shoot(this)
   end
 end
-function P_shoot(this)
+function Player_shoot(this)
   this.isAiming=false
   this.isShooting=true
-  local offset=ARROW_OFFSET_FROM+ARROW_OFFSET_TO
-  local angle=atan2(G_mouseX-this.x,G_mouseY-this.y)
+  local offset=CST_ARROW_OFFSET_FROM+CST_ARROW_OFFSET_TO
+  local angle=atan2(UTILS_mouseX-this.pos.x,UTILS_mouseY-this.pos.y)
   local arrow=this.arrows[this.arrowID+1]
   if arrow.lifetime>0 then
     sfx(3)
     return
   end
-  local speed=ARROW_SPEED_MIN+this.arrowSpeed*this.aimCharge
-  arrow.x=this.x+ARROW_OFFSET_FROM
-  arrow.y=this.y+ARROW_OFFSET_FROM
+  local speed=CST_ARROW_SPEED_MIN+this.arrowSpeed*this.aimCharge
+  arrow.x=this.pos.x+CST_ARROW_OFFSET_FROM
+  arrow.y=this.pos.y+CST_ARROW_OFFSET_FROM
   arrow.velX=cos(angle)*speed
   arrow.velY=sin(angle)*speed
-  arrow.lifetime=ARROW_TIME
-  this.arrowID=(this.arrowID+1)%ARROW_COUNT
-  sfx(SFX_SHOOT+G_frame%3)
+  arrow.lifetime=CST_ARROW_TIME
+  this.arrowID=(this.arrowID+1)%CST_ARROW_COUNT
+  sfx(CST_SFX_SHOOT+UTILS_frame%3)
 end
-function P_checkInputs(this)
-  P_updateMouse(this)
-  this.dirX=0
-  this.dirY=0
+function Player_checkInputs(this)
+  Player_updateMouse(this)
+  this.pos.dirX=0
+  this.pos.dirY=0
   if this.isAiming then
-    this.speed=SPEED_MIN
+    this.pos.speed=CST_SPEED_MIN
   else
-    this.speed=SPEED_MAX
+    this.pos.speed=CST_SPEED_MAX
   end
-  if btn(0,this.id) then
-    this.dirX-=1
+  if btn(0,this.pos.id) then
+    this.pos.dirX-=1
   end
-  if btn(1,this.id) then
-    this.dirX+=1
+  if btn(1,this.pos.id) then
+    this.pos.dirX+=1
   end
-  if btn(2,this.id) then
-    this.dirY-=1
+  if btn(2,this.pos.id) then
+    this.pos.dirY-=1
   end
-  if btn(3,this.id) then
-    this.dirY+=1
+  if btn(3,this.pos.id) then
+    this.pos.dirY+=1
   end
 end
-function P_getWalkCounter(this)
-  return this.walkCounter/SPEED_MAX%3
+function Player_getWalkCounter(this)
+  return this.walkCounter/CST_SPEED_MAX%3
 end
-function P_drawHealthBar(this)
+function Player_drawHealthBar(this)
   local barColor=11
   if this.health<10 then
     barColor=8
   end
-  line(this.x,this.y+9,this.x+this.health/15,this.y+9,barColor)
+  line(this.pos.x,this.pos.y+9,this.pos.x+this.health/15,this.pos.y+9,barColor)
 end
-function P_drawSprite(this,id)
-  spr(id,this.x,this.y)
+function Player_drawSprite(this,id)
+  spr(id,this.pos.x,this.pos.y)
 end
-function P_drawMouse(this)
+function Player_drawMouse(this)
   local offset=0
   if this.isAiming then
-    offset=1+G_frame/1.2%3
+    offset=1+this.aimCharge/CST_AIM_CHARGE_MAX*4
   end
-  spr(SPRITE_CURSOR+offset,G_mouseX,G_mouseY)
+  spr(CST_SPRITE_CURSOR+offset,UTILS_mouseX,UTILS_mouseY)
 end
-function P_updateArrows(this)
+function Player_updateArrows(this)
   foreach(this.arrows,function(arrow)
+      print(arrow.lifetime)
       if arrow.lifetime<=0 then
         return
       end
       arrow.lifetime-=1
       arrow.x+=arrow.velX
       arrow.y+=arrow.velY
-      foreach(M_players,function(player)
-          if not player.isAlive or player.id==this.id then
+      foreach(INGAME_players,function(player)
+          if not player.isAlive or player.pos.id==this.pos.id then
             return
           end
-          local distSqr=G_dist(arrow.x,arrow.y,player.x+ARROW_OFFSET_FROM,player.y+ARROW_OFFSET_FROM)
-          if distSqr<ARROW_PRECISION then
+          local distSqr=UTILS_dist(arrow.x,arrow.y,player.pos.x+CST_ARROW_OFFSET_FROM,player.pos.y+CST_ARROW_OFFSET_FROM)
+          if distSqr<CST_ARROW_PRECISION then
             sfx(2)
             arrow.lifetime=-1
-            player.health-=ARROW_DAMAGE*(abs(arrow.velX)+abs(arrow.velY))
+            player.health-=CST_ARROW_DAMAGE*(abs(arrow.velX)+abs(arrow.velY))
             if player.health<0 then
               player.health=0
               player.isAlive=false
@@ -226,7 +243,7 @@ function P_updateArrows(this)
       end
     end)
 end
-function P_drawArrows(this)
+function Player_drawArrows(this)
   foreach(this.arrows,function(arrow)
       if arrow.lifetime<=0 then
         return
@@ -234,9 +251,17 @@ function P_drawArrows(this)
       pset(arrow.x,arrow.y,7)
     end)
 end
-function P_create(id)
-  local this={isInit=false,isAlive=true,arrowSpeed=0.3,arrowID=0,healthTemp=0,health=0,numHeals=0,aimY=0,aimX=0,aimCharge=0,spriteIndex=0,aimCounter=0,walkCounter=0,speed=0,id=0,dirY=0,dirX=0,y=0,x=0,_y=0,_x=0,id=id,_x=128,_y=128,x=0,y=0,walkCounter=0,aimCounter=0}
-  this.spriteIndex=SPRITE_PLAYER
+function Player_create(id)
+  local this={isInit=false,isAlive=true,arrowSpeed=0.3,arrowID=0,healthTemp=0,health=0,numHeals=0,aimY=0,aimX=0,aimCharge=0,aimCounter=0,walkCounter=0}
+  this.pos=comp_Pos_create()
+  this.pos._x=128
+  this.pos._y=128
+  this.pos.x=0
+  this.pos.y=0
+  this.pos.id=id
+  this.pos.spriteIndex=CST_SPRITE_PLAYER
+  this.walkCounter=0
+  this.aimCounter=0
   this.isAiming=false
   this.wasAiming=false
   this.aimCharge=0
@@ -248,66 +273,103 @@ function P_create(id)
   this.isShooting=false
   this.arrowID=0
   this.arrows={}
-  for a=0,ARROW_COUNT-1 do
-    this.arrows[a+1]=P_makeArrow(this)
+  for a=0,CST_ARROW_COUNT-1 do
+    this.arrows[a+1]=Player_makeArrow(this)
   end
   return this
 end
-MOTION_SCALE=2
-SFX_SHOOT=5
-SPRITE_PLAYER=1
-SPRITE_CURSOR=7
-AIM_CHARGE_MAX=10
-SPEED_MIN=1
-SPEED_MAX=3
-SIZE=16
-MAX_X=256-SIZE
-MAX_Y=250-SIZE
-ARROW_COUNT=2
-ARROW_TIME=20
-ARROW_SPEED_MIN=2
-ARROW_OFFSET_FROM=4
-ARROW_OFFSET_TO=4
-ARROW_PRECISION=30
-ARROW_DAMAGE=5
-COLOR_GREEN_DARK=3
-G_mouseX=0
-G_mouseY=0
-G_mouseButtonMask=0
-G_mouseTimes={[0]=-1,-1,-1}
-G_frame=0
-G_isFrameEven=false
-player1=P_create(1)
-player1.x=80
-player1.useMouse=true
-M_players={player1,M_createRandomPlayer(),M_createRandomPlayer(),M_createRandomPlayer(),M_createRandomPlayer()}
-function _init()
+function comp_Pos_create()
+  return{spriteIndex=0,speed=0,id=0,dirY=0,dirX=0,y=0,x=0,_y=0,_x=0}
+end
+function MAINMENU_init(this)
   cls()
+  print("Main Menu")
+  print("PRESS A TO START")
+end
+function MAINMENU_update(this)
+  if btnp(0,1) then
+    UTILS_screenChange(INGAME_create())
+  end
+end
+function MAINMENU_draw(this)end
+function MAINMENU_destroy(this)end
+function MAINMENU_create()
+  return{init=MAINMENU_init,update=MAINMENU_update,draw=MAINMENU_draw,destroy=MAINMENU_destroy}
+end
+function INGAME_createRandomPlayer()
+  local player=Player_create(0)
+  player.pos.x=rnd(127.0)
+  player.pos.y=rnd(127.0)
+  return player
+end
+function INGAME_init(this)end
+function INGAME_update(this)
+  cls()
+  rectfill(0,0,128,128,CST_COLOR_GREEN_DARK)
+  UTILS_update()
+  Player_checkInputs(this.player1)
+  foreach(INGAME_players,function(player)
+      Player_update(player)
+    end)
+end
+function INGAME_draw(this)
+  foreach(INGAME_players,function(player)
+      Player_draw(player)
+    end)
+  Player_drawMouse(this.player1)
+end
+function INGAME_destroy(this)end
+function INGAME_create()
+  local this={init=INGAME_init,update=INGAME_update,draw=INGAME_draw,destroy=INGAME_destroy}
+  this.player1=Player_create(1)
+  this.player1.pos.x=80
+  this.player1.useMouse=true
+  INGAME_players={this.player1,INGAME_createRandomPlayer(),INGAME_createRandomPlayer(),INGAME_createRandomPlayer(),INGAME_createRandomPlayer()}
+  return this
+end
+CST_MOTION_SCALE=2
+CST_SFX_SHOOT=5
+CST_SPRITE_PLAYER=1
+CST_SPRITE_CURSOR=7
+CST_AIM_CHARGE_MAX=10
+CST_SPEED_MIN=1
+CST_SPEED_MAX=3
+CST_SIZE=16
+CST_MAX_X=256-CST_SIZE
+CST_MAX_Y=250-CST_SIZE
+CST_ARROW_COUNT=2
+CST_ARROW_TIME=20
+CST_ARROW_SPEED_MIN=2
+CST_ARROW_OFFSET_FROM=4
+CST_ARROW_OFFSET_TO=4
+CST_ARROW_PRECISION=20
+CST_ARROW_DAMAGE=5
+CST_COLOR_GREEN_DARK=3
+UTILS_mouseX=0
+UTILS_mouseY=0
+UTILS_mouseButtonMask=0
+UTILS_mouseTimes={[0]=-1,-1,-1}
+UTILS_frame=0
+UTILS_isFrameEven=false
+mainmenu=MAINMENU_create()
+function _init()
+  UTILS_screenChange(mainmenu)
 end
 function _update()
-  cls()
-  rectfill(0,0,128,128,COLOR_GREEN_DARK)
-  G_update()
-  P_checkInputs(player1)
-  foreach(M_players,function(player3)
-      P_update(player3)
-    end)
+  UTILS_screenUpdate()
 end
 function _draw()
-  foreach(M_players,function(player4)
-      P_draw(player4)
-    end)
-  P_drawMouse(player1)
+  UTILS_screenDraw()
 end
 __gfx__
-00000000008880000088800000888000008880000088800000888000000000000007700000077000000770000000000000000000000000000000000000000000
-00000000009f9000009f9000009f9000009f9000009f9000009f9000000770000007700000077000000000000000000000000000000000000000000000000000
-0000000008f4f80008f4f80008f4f80008ff580008ff580008ff5800000770000007700000000000000000000000000000000000000000000000000000000000
-00000000848878808488788084887480085555500855555008555550077007707770077777000077700000070000000000000000000000000000000000000000
-0000000080878080f0878080808780f00087f0000087f0000087f000077007707770077777000077700000070000000000000000000000000000000000000000
-00000000f07880f0007840f0f0684000007880000078800000788000000770000007700000000000000000000000000000000000000000000000000000000000
-00000000008080000080480008408000008080000080480008408000000770000007700000077000000000000000000000000000000000000000000000000000
-00000000084048000080000000008000084048000840000000004800000000000007700000077000000770000000000000000000000000000000000000000000
+00000000008880000088800000888000008880000088800000888000000000007777777707777770007777000000000000000000000000000000000000000000
+00000000009f9000009f9000009f9000009f9000009f9000009f9000770000777000000707000070007007000077770000777700000000000000000000000000
+0000000008f4f80008f4f80008f4f80008ff580008ff580008ff5800700000070770077000777700700000077777777707777770000000000000000000000000
+00000000848878808488788084887480085555500855555008555550700770070707707000777700707777077079970707788770000000000000000000000000
+0000000080878080f0878080808780f00087f0000087f0000087f000700770070707707000777700707777077079970707788770000000000000000000000000
+00000000f07880f0007840f0f0684000007880000078800000788000700000070770077000777700700000077777777707777770000000000000000000000000
+00000000008080000080480008408000008080000080480008408000770000777000000707000070007007000077770000777700000000000000000000000000
+00000000084048000080000000008000084048000840000000004800000000007777777707777770007777000000000000000000000000000000000000000000
 
 __gff__
 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
